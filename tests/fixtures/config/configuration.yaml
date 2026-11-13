@@ -5,5 +5,5 @@ script: !include scripts.yaml
 scene: !include scenes.yaml
 
 homeassistant:
-  name: Test
+  name: !secret home_name
   packages: !include_dir_named packages
