@@ -25,7 +25,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: '3.14'
+          python-version: '3.15'
       - name: Install test dependencies
         run: python -m pip install --disable-pip-version-check --quiet -r requirements-test.txt
       - name: Run tests
@@ -41,5 +41,5 @@ jobs:
         uses: $/
         with:
           # renovate: datasource=pypi depName=homeassistant
-          home-assistant-version: 2026.10.4
+          home-assistant-version: 2026.11.1
           path: tests/fixtures/config

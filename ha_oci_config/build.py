@@ -11,7 +11,7 @@ from .errors import Error
 from .github import unzip
 
 CONFIG_FILES = ('configuration.yaml', 'automations.yaml', 'scripts.yaml', 'scenes.yaml')
-CONFIG_DIRS = ('includes', 'packages', 'blueprints', 'pyscript')
+CONFIG_DIRS = ('includes', 'packages', 'blueprints', 'pyscript', 'themes')
 DOMAIN = re.compile(r'[a-z0-9_]+')
 
 

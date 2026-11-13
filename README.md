@@ -28,6 +28,7 @@ includes/      other files configuration.yaml includes
 packages/
 blueprints/
 pyscript/
+themes/
 hacs.yaml      custom integrations and dashboard cards
 ```
 
@@ -158,6 +159,7 @@ containers:
       - { name: config-git, mountPath: /config/packages, subPath: packages }
       - { name: config-git, mountPath: /config/blueprints, subPath: blueprints }
       - { name: config-git, mountPath: /config/pyscript, subPath: pyscript }
+      - { name: config-git, mountPath: /config/themes, subPath: themes }
       - { name: config-git, mountPath: /config/custom_components, subPath: custom_components }
       - { name: config-git, mountPath: /config/www/community, subPath: www/community }
 ```
