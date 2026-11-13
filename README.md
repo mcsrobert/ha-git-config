@@ -11,10 +11,11 @@ each custom integration and card pinned in `hacs.yaml`, verifies it and
 installs it into the image, so Home Assistant needs neither HACS nor network
 access to GitHub at runtime. To update a dependency, change its pin in Git.
 
-Git is the only way to change the configuration. Home Assistant's UI editors for
-YAML (automations, scripts, scenes) become read-only. Everything Home Assistant
-keeps in `.storage`, such as dashboards, integrations set up in the UI and the
-entity registry, stays on the persistent volume and remains editable.
+Git is the only way to change the YAML configuration. The mounts below block
+Home Assistant's UI editors from saving automations, scripts and scenes.
+Creation actions may still appear in the UI, but saving fails. Everything Home
+Assistant keeps in `.storage`, such as dashboards, integrations set up in the UI
+and the entity registry, stays on the persistent volume and remains editable.
 
 ## Configuration repository
 
@@ -138,6 +139,9 @@ containers:
   - name: home-assistant
     volumeMounts:
       - { name: config-git, mountPath: /config/configuration.yaml, subPath: configuration.yaml }
+      - { name: config-git, mountPath: /config/automations.yaml, subPath: editor-guards/automations.yaml }
+      - { name: config-git, mountPath: /config/scripts.yaml, subPath: editor-guards/scripts.yaml }
+      - { name: config-git, mountPath: /config/scenes.yaml, subPath: editor-guards/scenes.yaml }
       - { name: config-git, mountPath: /config/includes, subPath: includes }
       - { name: config-git, mountPath: /config/packages, subPath: packages }
       - { name: config-git, mountPath: /config/blueprints, subPath: blueprints }
@@ -145,6 +149,15 @@ containers:
       - { name: config-git, mountPath: /config/custom_components, subPath: custom_components }
       - { name: config-git, mountPath: /config/www/community, subPath: www/community }
 ```
+
+The image generates empty `automations.yaml`, `scripts.yaml` and `scenes.yaml`
+under `editor-guards/`. Mount all three over their fixed `/config` paths, even
+when the configuration loads those domains from `includes/` or packages. Home
+Assistant's UI editors always write to these root paths; moving the includes
+does not change that. Without these mounts, the editors can report a successful
+save to the persistent volume while Home Assistant continues loading the
+unchanged Git configuration. Keep the actual YAML content in `includes/` or
+packages, not in these generated guard files.
 
 Pin the image by digest and let Renovate update it. A new digest rolls the pod,
 so every configuration change restarts Home Assistant. Image volumes need

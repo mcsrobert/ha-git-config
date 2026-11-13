@@ -44,10 +44,27 @@ class BuildTest(unittest.TestCase):
         self.write('packages/old.yaml.disable', 'b:\n')
         self.write('automations.yaml', '[]\n')
         self.build()
-        self.assertEqual(self.files(), ['configuration.yaml', 'includes/scripts.yaml', 'packages/a.yaml',
-                                        'packages/old.yaml.disable'])
+        self.assertEqual(self.files(), ['configuration.yaml', 'editor-guards/automations.yaml',
+                                        'editor-guards/scenes.yaml', 'editor-guards/scripts.yaml', 'includes/scripts.yaml',
+                                        'packages/a.yaml', 'packages/old.yaml.disable'])
         for name in ('includes', 'packages', 'blueprints', 'pyscript', 'custom_components', 'www/community'):
             self.assertTrue((self.output / name).is_dir(), name)
+
+    def test_editor_guards_do_not_copy_or_replace_git_managed_content(self):
+        for name, content in (
+            ('automations.yaml', '- id: git_automation\n  alias: Git automation\n'),
+            ('scripts.yaml', 'git_script:\n  sequence: []\n'),
+            ('scenes.yaml', '- id: git_scene\n  name: Git scene\n'),
+        ):
+            self.write(name, content)
+            self.write(f'includes/{name}', content)
+        self.build()
+        for name, empty in (('automations.yaml', '[]\n'), ('scripts.yaml', '{}\n'), ('scenes.yaml', '[]\n')):
+            with self.subTest(name=name):
+                self.assertEqual((self.output / 'editor-guards' / name).read_text(), empty)
+                self.assertFalse((self.output / name).exists())
+                self.assertEqual((self.output / 'includes' / name).read_text(),
+                                 (self.source / 'includes' / name).read_text())
 
     def test_installs_integrations_and_cards(self):
         self.server.release('o/zipped', 'v1', {'zipped.zip': zip_bytes({'manifest.json': '{"domain": "zipped"}',
@@ -79,6 +96,9 @@ cards:
             'custom_components/src/manifest.json',
             'custom_components/zipped/manifest.json',
             'custom_components/zipped/sensor.py',
+            'editor-guards/automations.yaml',
+            'editor-guards/scenes.yaml',
+            'editor-guards/scripts.yaml',
             'www/community/card/card.js',
             'www/community/dist-card/dist-card.js',
         ])

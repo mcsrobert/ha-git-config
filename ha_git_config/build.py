@@ -11,6 +11,9 @@ from .errors import Error
 from .github import unzip
 
 CONFIG_DIRS = ('includes', 'packages', 'blueprints', 'pyscript')
+# Home Assistant's editors always use these root paths, regardless of !include.
+# Mount these empty files read-only to prevent writes to the persistent volume.
+EDITOR_FILES = {'automations.yaml': '[]\n', 'scripts.yaml': '{}\n', 'scenes.yaml': '[]\n'}
 DOMAIN = re.compile(r'[a-z0-9_]+')
 
 
@@ -26,6 +29,9 @@ def build(source, output, github):
         root = Path(staging) / 'config'
         root.mkdir()
         copy_file(source / 'configuration.yaml', root / 'configuration.yaml')
+        (root / 'editor-guards').mkdir()
+        for name, content in EDITOR_FILES.items():
+            (root / 'editor-guards' / name).write_text(content)
         for name in CONFIG_DIRS:
             if (source / name).exists() or (source / name).is_symlink():
                 copy_tree(source / name, root / name)
