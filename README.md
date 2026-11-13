@@ -118,12 +118,28 @@ The action:
 1. Scans the Git history for secrets with gitleaks.
 2. Builds the runtime layout from the repository and `hacs.yaml`.
 3. Runs Home Assistant's `check_config` on it and fails on any error or warning.
+   See [Secrets](#secrets).
 4. Builds a `FROM scratch` image for `linux/amd64` and `linux/arm64`. With
    `push: true` it pushes `ghcr.io/<owner>/<repository>:main` and
    `:sha-<commit>`.
 
 The image is reproducible: the same files give the same digest, so a commit
 that changes nothing Home Assistant reads does not restart it.
+
+## Secrets
+
+Keep `secrets.yaml` out of Git and put it on the persistent volume at
+`/config/secrets.yaml`, where Home Assistant reads it at runtime. Reference
+secrets with `!secret <name>` as usual.
+
+The check has no real secrets, so before running `check_config` the action
+scans every YAML file of the built configuration, including everything
+`configuration.yaml` includes, for `!secret` references. It writes a
+`secrets.yaml` with a placeholder string for each name into a temporary copy
+of the configuration and checks that copy. The placeholder never reaches the
+image. As a result, the check does not catch a secret missing from the real
+`secrets.yaml`, and a secret whose value must not be a string, such as a port
+number, can fail validation; use a literal value for those.
 
 ## Renovate
 
