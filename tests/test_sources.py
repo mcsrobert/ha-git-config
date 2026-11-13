@@ -1,7 +1,7 @@
 import unittest
 
-from ha_git_config.errors import Error
-from ha_git_config.sources import Source, load
+from ha_oci_config.errors import Error
+from ha_oci_config.sources import Source, load
 
 VALID = """
 integrations:

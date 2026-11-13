@@ -7,9 +7,9 @@ import stat
 import tempfile
 import unittest
 
-from ha_git_config.build import build
-from ha_git_config.errors import Error
-from ha_git_config.github import GitHub
+from ha_oci_config.build import build
+from ha_oci_config.errors import Error
+from ha_oci_config.github import GitHub
 
 from helpers import Server, repository, zip_bytes
 

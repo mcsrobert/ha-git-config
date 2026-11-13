@@ -3,7 +3,7 @@
   extends: [
     'config:recommended',
     'helpers:pinGitHubActionDigests',
-    'local>mcsrobert/ha-git-config',
+    'local>mcsrobert/ha-oci-config',
   ],
   timezone: 'Europe/Amsterdam',
   semanticCommits: 'enabled',

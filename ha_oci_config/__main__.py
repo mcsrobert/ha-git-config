@@ -1,4 +1,4 @@
-"""Command line: ha-git-config build SOURCE OUTPUT, ha-git-config check CONFIG."""
+"""Command line: ha-oci-config build SOURCE OUTPUT, ha-oci-config check CONFIG."""
 import argparse
 import os
 from pathlib import Path
@@ -11,7 +11,7 @@ from .github import GitHub
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(prog='ha-git-config', description=__doc__)
+    parser = argparse.ArgumentParser(prog='ha-oci-config', description=__doc__)
     commands = parser.add_subparsers(dest='command', required=True)
     build_command = commands.add_parser('build', help='assemble the configuration and pinned downloads')
     build_command.add_argument('source', type=Path, help='configuration repository directory')
