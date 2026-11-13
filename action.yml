@@ -11,7 +11,7 @@ inputs:
     description: Push the image. Leave false on pull requests.
     default: 'false'
   image:
-    description: Image name without tag. Defaults to ghcr.io/<owner>/<repository>.
+    description: Image name without tag. Defaults to ghcr.io/<owner>/<repository>. A name without a registry host, such as myuser/ha-config, is pushed to Docker Hub.
     default: ''
   tag:
     description: Tag to push, next to sha-<commit>.
@@ -77,7 +77,13 @@ runs:
         echo "dockerfile=${GITHUB_ACTION_PATH}/Dockerfile" >> "${GITHUB_OUTPUT}"
         image=${IMAGE:-ghcr.io/${GITHUB_REPOSITORY,,}}
         echo "image=${image}" >> "${GITHUB_OUTPUT}"
-        echo "registry=${image%%/*}" >> "${GITHUB_OUTPUT}"
+        first=${image%%/*}
+        if [[ "${image}" == */* && ( "${first}" == *.* || "${first}" == *:* || "${first}" == localhost ) ]]; then
+          registry=${first}
+        else
+          registry=docker.io
+        fi
+        echo "registry=${registry}" >> "${GITHUB_OUTPUT}"
 
     - name: Check configuration
       shell: bash
