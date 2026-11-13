@@ -10,6 +10,7 @@ from . import sources
 from .errors import Error
 from .github import unzip
 
+CONFIG_FILES = ('configuration.yaml', 'automations.yaml', 'scripts.yaml', 'scenes.yaml')
 CONFIG_DIRS = ('includes', 'packages', 'blueprints', 'pyscript')
 DOMAIN = re.compile(r'[a-z0-9_]+')
 
@@ -25,7 +26,8 @@ def build(source, output, github):
     with tempfile.TemporaryDirectory(dir=output.parent) as staging:
         root = Path(staging) / 'config'
         root.mkdir()
-        copy_file(source / 'configuration.yaml', root / 'configuration.yaml')
+        for name in CONFIG_FILES:
+            copy_file(source / name, root / name)
         for name in CONFIG_DIRS:
             if (source / name).exists() or (source / name).is_symlink():
                 copy_tree(source / name, root / name)

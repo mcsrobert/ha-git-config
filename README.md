@@ -11,26 +11,39 @@ each custom integration and card pinned in `hacs.yaml`, verifies it and
 installs it into the image, so Home Assistant needs neither HACS nor network
 access to GitHub at runtime. To update a dependency, change its pin in Git.
 
-Git is the only way to change the configuration. Home Assistant's UI editors for
-YAML (automations, scripts, scenes) become read-only. Everything Home Assistant
-keeps in `.storage`, such as dashboards, integrations set up in the UI and the
-entity registry, stays on the persistent volume and remains editable.
+Git is the only way to change the YAML configuration. The mounts below block
+Home Assistant's UI editors from saving automations, scripts and scenes.
+Creation actions may still appear in the UI, but saving fails. Everything Home
+Assistant keeps in `.storage`, such as dashboards, integrations set up in the UI
+and the entity registry, stays on the persistent volume and remains editable.
 
 ## Configuration repository
 
 ```text
 configuration.yaml
-includes/      files configuration.yaml includes, such as automations.yaml
+automations.yaml
+scripts.yaml
+scenes.yaml
+includes/      other files configuration.yaml includes
 packages/
 blueprints/
 pyscript/
 hacs.yaml      custom integrations and dashboard cards
 ```
 
-Only these paths reach Home Assistant. Each is mounted on its own, so files that
-`configuration.yaml` includes live in `includes/` rather than next to it, for
-example `automation: !include includes/automations.yaml`. Adding a file to a
-directory never needs a change to the mounts.
+Only these paths reach Home Assistant. The four root YAML files are required;
+use `[]` for empty automations and scenes, and `{}` for empty scripts. Keep
+these three files at their standard paths and include them directly:
+
+```yaml
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
+```
+
+Each file or directory is mounted on its own. Other included files live in
+`includes/`, for example `template: !include includes/template_entities.yaml`.
+Adding a file to a directory never needs a change to the mounts.
 
 ### hacs.yaml
 
@@ -138,6 +151,9 @@ containers:
   - name: home-assistant
     volumeMounts:
       - { name: config-git, mountPath: /config/configuration.yaml, subPath: configuration.yaml }
+      - { name: config-git, mountPath: /config/automations.yaml, subPath: automations.yaml }
+      - { name: config-git, mountPath: /config/scripts.yaml, subPath: scripts.yaml }
+      - { name: config-git, mountPath: /config/scenes.yaml, subPath: scenes.yaml }
       - { name: config-git, mountPath: /config/includes, subPath: includes }
       - { name: config-git, mountPath: /config/packages, subPath: packages }
       - { name: config-git, mountPath: /config/blueprints, subPath: blueprints }
@@ -145,6 +161,12 @@ containers:
       - { name: config-git, mountPath: /config/custom_components, subPath: custom_components }
       - { name: config-git, mountPath: /config/www/community, subPath: www/community }
 ```
+
+Mount the actual `automations.yaml`, `scripts.yaml` and `scenes.yaml` files at
+their standard `/config` paths. Home Assistant's UI editors always write to
+these paths, so the read-only mounts also block UI saves. Moving the files into
+`includes/` would leave the editor paths writable on the persistent volume,
+where saves could succeed without changing the loaded configuration.
 
 Pin the image by digest and let Renovate update it. A new digest rolls the pod,
 so every configuration change restarts Home Assistant. Image volumes need

@@ -23,6 +23,9 @@ class BuildTest(unittest.TestCase):
         self.github = GitHub(api=self.server.url, git=f'file://{self.tmp}/remote')
         self.source = self.tmp / 'source'
         self.write('configuration.yaml', 'homeassistant:\n')
+        self.write('automations.yaml', '[]\n')
+        self.write('scripts.yaml', '{}\n')
+        self.write('scenes.yaml', '[]\n')
         self.output = self.tmp / 'out' / 'config'
 
     def write(self, name, text):
@@ -44,10 +47,25 @@ class BuildTest(unittest.TestCase):
         self.write('packages/old.yaml.disable', 'b:\n')
         self.write('automations.yaml', '[]\n')
         self.build()
-        self.assertEqual(self.files(), ['configuration.yaml', 'includes/scripts.yaml', 'packages/a.yaml',
-                                        'packages/old.yaml.disable'])
+        self.assertEqual(self.files(), ['automations.yaml', 'configuration.yaml', 'includes/scripts.yaml',
+                                        'packages/a.yaml', 'packages/old.yaml.disable', 'scenes.yaml', 'scripts.yaml'])
         for name in ('includes', 'packages', 'blueprints', 'pyscript', 'custom_components', 'www/community'):
             self.assertTrue((self.output / name).is_dir(), name)
+
+    def test_copies_the_actual_editor_files_to_their_standard_paths(self):
+        for name, content in (
+            ('automations.yaml', '- id: git_automation\n  alias: Git automation\n'),
+            ('scripts.yaml', 'git_script:\n  sequence: []\n'),
+            ('scenes.yaml', '- id: git_scene\n  name: Git scene\n'),
+        ):
+            self.write(name, content)
+            self.write(f'includes/{name}', content)
+        self.build()
+        for name in ('automations.yaml', 'scripts.yaml', 'scenes.yaml'):
+            with self.subTest(name=name):
+                self.assertEqual((self.output / name).read_bytes(), (self.source / name).read_bytes())
+                self.assertEqual((self.output / 'includes' / name).read_text(),
+                                 (self.source / 'includes' / name).read_text())
 
     def test_installs_integrations_and_cards(self):
         self.server.release('o/zipped', 'v1', {'zipped.zip': zip_bytes({'manifest.json': '{"domain": "zipped"}',
@@ -75,10 +93,13 @@ cards:
 """)
         log = self.build()
         self.assertEqual(self.files(), [
+            'automations.yaml',
             'configuration.yaml',
             'custom_components/src/manifest.json',
             'custom_components/zipped/manifest.json',
             'custom_components/zipped/sensor.py',
+            'scenes.yaml',
+            'scripts.yaml',
             'www/community/card/card.js',
             'www/community/dist-card/dist-card.js',
         ])
@@ -102,9 +123,13 @@ cards:
         (self.source / 'packages' / 'link.yaml').symlink_to('/etc/hosts')
         self.assertFails('link.yaml must be a regular file')
 
-    def test_requires_configuration_yaml(self):
-        (self.source / 'configuration.yaml').unlink()
-        self.assertFails('configuration.yaml must be a regular file')
+    def test_requires_every_root_yaml_file(self):
+        for name, content in (('configuration.yaml', 'homeassistant:\n'), ('automations.yaml', '[]\n'),
+                              ('scripts.yaml', '{}\n'), ('scenes.yaml', '[]\n')):
+            with self.subTest(name=name):
+                (self.source / name).unlink()
+                self.assertFails(f'{name} must be a regular file')
+                self.write(name, content)
 
     def test_refuses_existing_output(self):
         self.output.mkdir(parents=True)
