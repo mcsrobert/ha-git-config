@@ -41,5 +41,5 @@ jobs:
         uses: $/
         with:
           # renovate: datasource=pypi depName=homeassistant
-          home-assistant-version: 2026.10.4
+          home-assistant-version: 2026.11.1
           path: tests/fixtures/config
