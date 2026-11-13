@@ -49,7 +49,7 @@ class BuildTest(unittest.TestCase):
         self.build()
         self.assertEqual(self.files(), ['automations.yaml', 'configuration.yaml', 'includes/scripts.yaml',
                                         'packages/a.yaml', 'packages/old.yaml.disable', 'scenes.yaml', 'scripts.yaml'])
-        for name in ('includes', 'packages', 'blueprints', 'pyscript', 'custom_components', 'www/community'):
+        for name in ('includes', 'packages', 'blueprints', 'pyscript', 'themes', 'custom_components', 'www/community'):
             self.assertTrue((self.output / name).is_dir(), name)
 
     def test_copies_the_actual_editor_files_to_their_standard_paths(self):
