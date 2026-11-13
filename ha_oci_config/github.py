@@ -6,7 +6,6 @@ import json
 import os
 from pathlib import PurePosixPath
 import subprocess
-import tarfile
 import tempfile
 import urllib.error
 from urllib.parse import quote
@@ -67,18 +66,44 @@ class Tree:
         return [PurePosixPath(name).name for name in names.splitlines()]
 
     def files(self, path):
-        """Files at path: the file itself under its own name, or the contents of a directory."""
-        archive = git('-C', self.repo, 'archive', '--format=tar', self.commit, '--', path)
-        files = {}
-        with tarfile.open(fileobj=io.BytesIO(archive)) as tar:
-            for member in tar:
-                if member.isdir():
-                    continue
-                if not member.isfile():
-                    raise Error(f'{member.name} is not a regular file')
-                name = PurePosixPath(path).name if member.name == path else member.name.removeprefix(f'{path}/')
-                files[safe(name)] = tar.extractfile(member).read()
-        return files
+        """Files at path: the file itself under its own name, or the contents of a directory.
+
+        Blobs are read exactly as committed: unlike git archive, this ignores the repository's
+        .gitattributes (export-ignore, export-subst, eol and filter attributes).
+        """
+        listing = git('-C', self.repo, 'ls-tree', '-r', '-z', self.commit, '--', path)
+        if not listing:
+            raise Error(f"git: pathspec '{path}' did not match any files")
+        names, oids = [], []
+        for record in filter(None, listing.split(b'\0')):
+            meta, _, member = record.partition(b'\t')
+            mode, kind, oid = meta.decode().split()
+            member = os.fsdecode(member)
+            if kind == 'commit':  # a submodule: git archive yielded only an empty directory for it
+                continue
+            if kind != 'blob' or mode not in ('100644', '100755'):
+                raise Error(f'{member} is not a regular file')
+            name = PurePosixPath(path).name if member == path else member.removeprefix(f'{path}/')
+            names.append(safe(name))
+            oids.append(oid)
+        return dict(zip(names, blobs(self.repo, oids)))
+
+
+def blobs(repo, oids):
+    """The contents of the given blobs, in order, read in one git cat-file --batch call."""
+    if not oids:
+        return []
+    output = git('-C', repo, 'cat-file', '--batch', input=''.join(f'{oid}\n' for oid in oids).encode())
+    contents, offset = [], 0
+    for oid in oids:
+        end = output.index(b'\n', offset)
+        header = output[offset:end].decode().split()
+        if header[:2] != [oid, 'blob']:
+            raise Error(f'git: cannot read blob {oid}')
+        size = int(header[2])
+        contents.append(output[end + 1:end + 1 + size])
+        offset = end + 1 + size + 1
+    return contents
 
 
 def unzip(data):
@@ -112,10 +137,10 @@ def get(url, headers):
         raise Error(f'{url}: {error.reason}') from None
 
 
-def git(*args):
+def git(*args, input=None):
     env = {**os.environ, 'GIT_TERMINAL_PROMPT': '0'}
     try:
-        return subprocess.run(['git', *args], check=True, capture_output=True, env=env).stdout
+        return subprocess.run(['git', *args], input=input, check=True, capture_output=True, env=env).stdout
     except subprocess.CalledProcessError as error:
         lines = error.stderr.decode(errors='replace').strip().splitlines()
         raise Error(f'git: {lines[-1] if lines else f"exit status {error.returncode}"}') from None
