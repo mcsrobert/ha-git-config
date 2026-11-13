@@ -12,6 +12,7 @@ from .github import unzip
 
 CONFIG_FILES = ('configuration.yaml', 'automations.yaml', 'scripts.yaml', 'scenes.yaml')
 CONFIG_DIRS = ('includes', 'packages', 'blueprints', 'pyscript', 'themes')
+HACS_FILES = ('hacs.yaml', 'hacs.yml')
 DOMAIN = re.compile(r'[a-z0-9_]+')
 
 
@@ -20,8 +21,10 @@ def build(source, output, github):
     output = Path(output).absolute()
     if output.exists():
         raise Error(f'{output} already exists')
-    pinned = source / 'hacs.yaml'
-    pinned = sources.load(pinned.read_text()) if pinned.exists() else []
+    found = [source / name for name in HACS_FILES if (source / name).exists()]
+    if len(found) > 1:
+        raise Error('use either hacs.yaml or hacs.yml, not both')
+    pinned = sources.load(found[0].read_text()) if found else []
     output.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=output.parent) as staging:
         root = Path(staging) / 'config'

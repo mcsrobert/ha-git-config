@@ -48,6 +48,8 @@ Adding a file to a directory never needs a change to the mounts.
 
 ### hacs.yaml
 
+`hacs.yml` is accepted too, but not both.
+
 ```yaml
 integrations:
   - repository: amitfin/retry
