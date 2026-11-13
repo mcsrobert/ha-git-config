@@ -80,7 +80,7 @@ concurrency:
 
 jobs:
   config:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 20
     permissions:
       contents: read
