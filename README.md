@@ -21,17 +21,29 @@ and the entity registry, stays on the persistent volume and remains editable.
 
 ```text
 configuration.yaml
-includes/      files configuration.yaml includes, such as automations.yaml
+automations.yaml
+scripts.yaml
+scenes.yaml
+includes/      other files configuration.yaml includes
 packages/
 blueprints/
 pyscript/
 hacs.yaml      custom integrations and dashboard cards
 ```
 
-Only these paths reach Home Assistant. Each is mounted on its own, so files that
-`configuration.yaml` includes live in `includes/` rather than next to it, for
-example `automation: !include includes/automations.yaml`. Adding a file to a
-directory never needs a change to the mounts.
+Only these paths reach Home Assistant. The four root YAML files are required;
+use `[]` for empty automations and scenes, and `{}` for empty scripts. Keep
+these three files at their standard paths and include them directly:
+
+```yaml
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
+```
+
+Each file or directory is mounted on its own. Other included files live in
+`includes/`, for example `template: !include includes/template_entities.yaml`.
+Adding a file to a directory never needs a change to the mounts.
 
 ### hacs.yaml
 
@@ -139,9 +151,9 @@ containers:
   - name: home-assistant
     volumeMounts:
       - { name: config-git, mountPath: /config/configuration.yaml, subPath: configuration.yaml }
-      - { name: config-git, mountPath: /config/automations.yaml, subPath: editor-guards/automations.yaml }
-      - { name: config-git, mountPath: /config/scripts.yaml, subPath: editor-guards/scripts.yaml }
-      - { name: config-git, mountPath: /config/scenes.yaml, subPath: editor-guards/scenes.yaml }
+      - { name: config-git, mountPath: /config/automations.yaml, subPath: automations.yaml }
+      - { name: config-git, mountPath: /config/scripts.yaml, subPath: scripts.yaml }
+      - { name: config-git, mountPath: /config/scenes.yaml, subPath: scenes.yaml }
       - { name: config-git, mountPath: /config/includes, subPath: includes }
       - { name: config-git, mountPath: /config/packages, subPath: packages }
       - { name: config-git, mountPath: /config/blueprints, subPath: blueprints }
@@ -150,14 +162,11 @@ containers:
       - { name: config-git, mountPath: /config/www/community, subPath: www/community }
 ```
 
-The image generates empty `automations.yaml`, `scripts.yaml` and `scenes.yaml`
-under `editor-guards/`. Mount all three over their fixed `/config` paths, even
-when the configuration loads those domains from `includes/` or packages. Home
-Assistant's UI editors always write to these root paths; moving the includes
-does not change that. Without these mounts, the editors can report a successful
-save to the persistent volume while Home Assistant continues loading the
-unchanged Git configuration. Keep the actual YAML content in `includes/` or
-packages, not in these generated guard files.
+Mount the actual `automations.yaml`, `scripts.yaml` and `scenes.yaml` files at
+their standard `/config` paths. Home Assistant's UI editors always write to
+these paths, so the read-only mounts also block UI saves. Moving the files into
+`includes/` would leave the editor paths writable on the persistent volume,
+where saves could succeed without changing the loaded configuration.
 
 Pin the image by digest and let Renovate update it. A new digest rolls the pod,
 so every configuration change restarts Home Assistant. Image volumes need

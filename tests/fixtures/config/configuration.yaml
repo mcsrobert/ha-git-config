@@ -1,5 +1,9 @@
 default_config:
 
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
+
 homeassistant:
   name: Test
   packages: !include_dir_named packages
