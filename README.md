@@ -6,6 +6,11 @@ integrations and dashboard cards, as an OCI image. Kubernetes mounts that image
 read-only into the Home Assistant pod as an
 [image volume](https://kubernetes.io/docs/concepts/storage/volumes/#image).
 
+The image bundles everything the configuration depends on. The Action downloads
+each custom integration and card pinned in `hacs.yaml`, verifies it and
+installs it into the image, so Home Assistant needs neither HACS nor network
+access to GitHub at runtime. To update a dependency, change its pin in Git.
+
 Git is the only way to change the configuration. Home Assistant's UI editors for
 YAML (automations, scripts, scenes) become read-only. Everything Home Assistant
 keeps in `.storage`, such as dashboards, integrations set up in the UI and the
@@ -119,8 +124,10 @@ annotated versions such as `home-assistant-version`:
 
 ## Mounting the image
 
-The image holds these paths. Mount each one over `/config`, which stays a
-persistent volume for `.storage`, the database and logs:
+The image holds these paths, including the integrations and cards from
+`hacs.yaml` under `custom_components` and `www/community`. Mount each one over
+`/config`, which stays a persistent volume for `.storage`, the database and
+logs. The mounts are read-only, so HACS cannot manage those two directories:
 
 ```yaml
 volumes:
