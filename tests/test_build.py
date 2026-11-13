@@ -105,6 +105,19 @@ cards:
         ])
         self.assertIn('o/source 1.0 -> custom_components/src', log)
 
+    def test_reads_hacs_yml(self):
+        self.server.release('o/card', 'v2', {'card.js': b'js'})
+        self.write('hacs.yml', 'cards:\n  - repository: o/card\n    version: v2\n    asset: card.js\n')
+        self.build()
+        self.assertIn('www/community/card/card.js', self.files())
+
+    def test_rejects_both_hacs_yaml_and_yml(self):
+        self.write('hacs.yaml', 'cards: []\n')
+        self.write('hacs.yml', 'cards: []\n')
+        with self.assertRaisesRegex(Error, 'either hacs.yaml or hacs.yml'):
+            self.build()
+        self.assertFalse(self.output.parent.exists())
+
     def test_normalizes_permissions(self):
         self.write('pyscript/run.py', '')
         os.chmod(self.source / 'pyscript' / 'run.py', 0o700)
