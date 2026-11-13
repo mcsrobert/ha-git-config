@@ -54,10 +54,26 @@ runs:
       shell: bash
       run: '"${RUNNER_TEMP}/gitleaks" git --no-banner --redact'
 
+    - name: Resolve the Python version of Home Assistant
+      id: python
+      shell: bash
+      env:
+        VERSION: ${{ inputs.home-assistant-version }}
+      run: |
+        # Use the lowest Python version the release supports, the baseline that
+        # Home Assistant tests and pins its dependencies against.
+        requires=$(curl -fsSL "https://pypi.org/pypi/homeassistant/${VERSION}/json" | jq -r '.info.requires_python')
+        if [[ ! "${requires}" =~ \>=[[:space:]]*([0-9]+\.[0-9]+) ]]; then
+          echo "::error::Cannot read the Python version from requires-python '${requires}' of homeassistant ${VERSION}"
+          exit 1
+        fi
+        echo "Home Assistant ${VERSION} requires Python ${requires}, using ${BASH_REMATCH[1]}"
+        echo "version=${BASH_REMATCH[1]}" >> "${GITHUB_OUTPUT}"
+
     - name: Set up Python
       uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
       with:
-        python-version: '3.15'
+        python-version: ${{ steps.python.outputs.version }}
 
     - name: Install Home Assistant
       shell: bash
