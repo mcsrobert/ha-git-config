@@ -1,0 +1,16 @@
+integrations:
+  - repository: amitfin/retry
+    version: v4.2.0
+    asset: retry.zip
+  - repository: custom-components/nordpool
+    version: 0.0.18
+    commit: 1eaa2490943bb41a2e322e9349ba2d7c6746a94b
+
+cards:
+  - repository: RomRider/apexcharts-card
+    version: v2.2.3
+    asset: apexcharts-card.js
+  - repository: mlamberts78/weather-chart-card
+    version: V2.4.11
+    commit: 71be08feeced42427ac69954168ff4ba05990dfc
+    path: dist/weather-chart-card.js

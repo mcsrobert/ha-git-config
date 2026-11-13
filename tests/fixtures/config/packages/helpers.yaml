@@ -1,0 +1,3 @@
+input_boolean:
+  guest_mode:
+    name: Guest Mode

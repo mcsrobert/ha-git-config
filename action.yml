@@ -1,0 +1,112 @@
+name: Home Assistant Git config
+description: Check a Home Assistant configuration repository and publish it as an OCI image to mount read-only.
+inputs:
+  home-assistant-version:
+    description: Home Assistant version to run check_config with.
+    required: true
+  path:
+    description: Directory of the configuration inside the repository.
+    default: .
+  push:
+    description: Push the image. Leave false on pull requests.
+    default: 'false'
+  image:
+    description: Image name without tag. Defaults to ghcr.io/<owner>/<repository>.
+    default: ''
+  tag:
+    description: Tag to push, next to sha-<commit>.
+    default: main
+  token:
+    description: Token for the GitHub API and the registry. Needs packages:write to push.
+    default: ${{ github.token }}
+outputs:
+  image:
+    description: Image name without tag.
+    value: ${{ steps.prepare.outputs.image }}
+  digest:
+    description: Digest of the image index.
+    value: ${{ steps.build.outputs.digest }}
+runs:
+  using: composite
+  steps:
+    - name: Checkout
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        fetch-depth: 0
+        persist-credentials: false
+
+    - name: Install gitleaks
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        # renovate: datasource=github-releases depName=gitleaks/gitleaks
+        GITLEAKS_VERSION: v8.30.1
+      run: |
+        asset="gitleaks_${GITLEAKS_VERSION#v}_linux_x64.tar.gz"
+        digest=$(gh api "repos/gitleaks/gitleaks/releases/tags/${GITLEAKS_VERSION}" \
+          --jq ".assets[] | select(.name == \"${asset}\") | .digest")
+        curl -fsSL -o "${RUNNER_TEMP}/${asset}" \
+          "https://github.com/gitleaks/gitleaks/releases/download/${GITLEAKS_VERSION}/${asset}"
+        echo "${digest#sha256:}  ${RUNNER_TEMP}/${asset}" | sha256sum --check --quiet
+        tar -xzf "${RUNNER_TEMP}/${asset}" -C "${RUNNER_TEMP}" gitleaks
+
+    - name: Scan Git history for secrets
+      shell: bash
+      run: '"${RUNNER_TEMP}/gitleaks" git --no-banner --redact'
+
+    - name: Set up Python
+      uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+      with:
+        python-version: '3.14'
+
+    - name: Install Home Assistant
+      shell: bash
+      env:
+        VERSION: ${{ inputs.home-assistant-version }}
+      run: python -m pip install --disable-pip-version-check --quiet "homeassistant==${VERSION}"
+
+    - name: Build configuration
+      id: prepare
+      shell: bash
+      env:
+        CONFIG_PATH: ${{ inputs.path }}
+        GITHUB_TOKEN: ${{ inputs.token }}
+        IMAGE: ${{ inputs.image }}
+      run: |
+        PYTHONPATH="${GITHUB_ACTION_PATH}" python -m ha_git_config build "${CONFIG_PATH}" "${RUNNER_TEMP}/ha-git-config"
+        echo "dockerfile=${GITHUB_ACTION_PATH}/Dockerfile" >> "${GITHUB_OUTPUT}"
+        image=${IMAGE:-ghcr.io/${GITHUB_REPOSITORY,,}}
+        echo "image=${image}" >> "${GITHUB_OUTPUT}"
+        echo "registry=${image%%/*}" >> "${GITHUB_OUTPUT}"
+
+    - name: Check configuration
+      shell: bash
+      run: PYTHONPATH="${GITHUB_ACTION_PATH}" python -m ha_git_config check "${RUNNER_TEMP}/ha-git-config"
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+    - name: Log in to the registry
+      if: inputs.push == 'true'
+      uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+      with:
+        registry: ${{ steps.prepare.outputs.registry }}
+        username: ${{ github.actor }}
+        password: ${{ inputs.token }}
+
+    - name: Build image
+      id: build
+      uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+      env:
+        SOURCE_DATE_EPOCH: '0'
+      with:
+        context: ${{ runner.temp }}/ha-git-config
+        file: ${{ steps.prepare.outputs.dockerfile }}
+        platforms: linux/amd64,linux/arm64
+        provenance: false
+        sbom: false
+        labels: org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+        tags: |
+          ${{ steps.prepare.outputs.image }}:${{ inputs.tag }}
+          ${{ steps.prepare.outputs.image }}:sha-${{ github.sha }}
+        outputs: type=image,push=${{ inputs.push }},rewrite-timestamp=true

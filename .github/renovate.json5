@@ -1,0 +1,11 @@
+{
+  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
+  extends: [
+    'config:recommended',
+    'helpers:pinGitHubActionDigests',
+    'local>mcsrobert/ha-git-config',
+  ],
+  timezone: 'Europe/Amsterdam',
+  semanticCommits: 'enabled',
+  ignorePaths: ['tests/**'],
+}
