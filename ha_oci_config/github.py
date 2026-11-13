@@ -113,7 +113,7 @@ def get(url, headers):
 
 
 def git(*args):
-    env = {**os.environ, 'GIT_TERMINAL_PROMPT': '0'}
+    env = {**os.environ, 'GIT_TERMINAL_PROMPT': '0', 'GIT_LITERAL_PATHSPECS': '1'}
     try:
         return subprocess.run(['git', *args], check=True, capture_output=True, env=env).stdout
     except subprocess.CalledProcessError as error:

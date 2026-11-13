@@ -75,6 +75,14 @@ class CheckoutTest(unittest.TestCase):
             with self.assertRaisesRegex(Error, 'dist/link.js is not a regular file'):
                 tree.files('dist')
 
+    def test_paths_are_literal_not_pathspec_patterns(self):
+        commit = repository(self.root, 'o/r', {'dist/a.js': 'a', 'dist/b.js': 'b'}, 'v1')
+        with self.github.checkout('o/r', 'v1', commit) as tree:
+            with self.assertRaisesRegex(Error, 'git: .*dist/\\*\\.js'):
+                tree.files('dist/*.js')
+            with self.assertRaisesRegex(Error, 'git: .*'):
+                tree.files(':(exclude)dist/a.js')
+
     def test_reports_missing_path(self):
         commit = repository(self.root, 'o/r', {'a': 'a'}, 'v1')
         with self.github.checkout('o/r', 'v1', commit) as tree:
