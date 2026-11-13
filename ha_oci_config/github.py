@@ -63,8 +63,8 @@ class Tree:
         self.commit = commit
 
     def dirs(self, path):
-        names = git('-C', self.repo, 'ls-tree', '-d', '--name-only', self.commit, '--', f'{path}/').decode()
-        return [PurePosixPath(name).name for name in names.splitlines()]
+        names = git('-C', self.repo, 'ls-tree', '-d', '--name-only', '-z', self.commit, '--', f'{path}/').decode()
+        return [PurePosixPath(name).name for name in names.split('\0') if name]
 
     def files(self, path):
         """Files at path: the file itself under its own name, or the contents of a directory."""

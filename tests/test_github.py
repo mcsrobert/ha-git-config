@@ -60,6 +60,11 @@ class CheckoutTest(unittest.TestCase):
             self.assertEqual(tree.files('custom_components/r'), {'manifest.json': b'{}', 'sub/x.py': b'x'})
             self.assertEqual(tree.files('dist/card.js'), {'card.js': b'js'})
 
+    def test_lists_directories_with_non_ascii_names(self):
+        commit = repository(self.root, 'o/r', {'custom_components/café/manifest.json': '{}'}, 'v1')
+        with self.github.checkout('o/r', 'v1', commit) as tree:
+            self.assertEqual(tree.dirs('custom_components'), ['café'])
+
     def test_rejects_tag_pointing_elsewhere(self):
         repository(self.root, 'o/r', {'a': 'a'}, 'v1')
         with self.assertRaisesRegex(Error, 'tag v1 points to [0-9a-f]{40}, not ' + 'b' * 40):
