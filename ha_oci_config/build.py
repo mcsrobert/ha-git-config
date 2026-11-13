@@ -70,11 +70,29 @@ def install(item, root, github):
         target = Path('www', 'community', item.name)
     if (root / target).exists():
         raise Error(f'{item} installs into {target.as_posix()}, which another entry already uses')
-    for name, data in files.items():
-        path = root / target / name
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_bytes(data)
+    check_paths(item, files)
+    try:
+        for name, data in files.items():
+            path = root / target / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(data)
+    except OSError as error:
+        raise Error(f'{item}: cannot write {target.as_posix()}: {error.strerror or error}') from None
     return target.as_posix()
+
+
+def check_paths(item, files):
+    """Reject duplicate, case-colliding and file-versus-directory paths before writing."""
+    seen = {}
+    for name in files:
+        key = tuple(part.casefold() for part in name.split('/'))
+        if key in seen:
+            raise Error(f'{item} contains conflicting paths {seen[key]!r} and {name!r}')
+        seen[key] = name
+    for key, name in seen.items():
+        for end in range(1, len(key)):
+            if key[:end] in seen:
+                raise Error(f'{item} contains {seen[key[:end]]!r} as both a file and a directory ({name!r})')
 
 
 def copy_file(source, target):
