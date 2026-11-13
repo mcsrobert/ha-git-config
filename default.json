@@ -6,7 +6,7 @@
       "description": "Update release assets in hacs.yaml",
       "customType": "regex",
       "managerFilePatterns": ["/(^|/)hacs\\.ya?ml$/"],
-      "matchStrings": ["repository: (?<depName>\\S+)\\n\\s+version: (?<currentValue>\\S+)\\n\\s+asset: "],
+      "matchStrings": ["repository: (?<depName>\\S+)\\n\\s+version: [\"']?(?<currentValue>[^\"'\\s]+)[\"']?\\n\\s+asset: "],
       "datasourceTemplate": "github-releases",
       "versioningTemplate": "regex:^[vV]?(?<major>\\d+)(?:\\.(?<minor>\\d+))?(?:\\.(?<patch>\\d+))?(?<prerelease>[-.]?[a-zA-Z].*)?$"
     },
@@ -14,7 +14,7 @@
       "description": "Update commits in hacs.yaml",
       "customType": "regex",
       "managerFilePatterns": ["/(^|/)hacs\\.ya?ml$/"],
-      "matchStrings": ["repository: (?<depName>\\S+)\\n\\s+version: (?<currentValue>\\S+)\\n\\s+commit: (?<currentDigest>[0-9a-f]{40})"],
+      "matchStrings": ["repository: (?<depName>\\S+)\\n\\s+version: [\"']?(?<currentValue>[^\"'\\s]+)[\"']?\\n\\s+commit: (?<currentDigest>[0-9a-f]{40})"],
       "datasourceTemplate": "github-tags",
       "versioningTemplate": "regex:^[vV]?(?<major>\\d+)(?:\\.(?<minor>\\d+))?(?:\\.(?<patch>\\d+))?(?<prerelease>[-.]?[a-zA-Z].*)?$"
     },
