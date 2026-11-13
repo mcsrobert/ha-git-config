@@ -53,7 +53,7 @@ class Server:
 def zip_bytes(files):
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, 'w') as archive:
-        for name, data in files.items():
+        for name, data in (files.items() if isinstance(files, dict) else files):
             archive.writestr(name, data)
     return buffer.getvalue()
 

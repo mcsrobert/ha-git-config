@@ -6,6 +6,7 @@ import shutil
 import stat
 import tempfile
 import unittest
+import warnings
 
 from ha_oci_config.build import build
 from ha_oci_config.errors import Error
@@ -164,6 +165,34 @@ cards:
                 commit = repository(self.tmp / 'remote', name, files, 'v1')
                 self.write('hacs.yaml', f'integrations:\n  - repository: {name}\n    version: v1\n    commit: {commit}\n')
                 self.assertFails(message)
+
+    def install_zip(self, files):
+        self.server.release('o/a', 'v1', {'x.zip': files})
+        self.write('hacs.yaml', 'integrations:\n  - repository: o/a\n    version: v1\n    asset: x.zip\n')
+
+    def test_rejects_file_and_directory_with_one_name(self):
+        manifest = '{"domain": "a"}'
+        for files in ({'manifest.json': manifest, 'sub': '', 'sub/x.py': ''},
+                      {'manifest.json': manifest, 'sub/x.py': '', 'sub': ''},
+                      {'manifest.json': manifest, 'Sub': '', 'sub/x.py': ''}):
+            with self.subTest(files=list(files)):
+                self.install_zip(zip_bytes(files))
+                self.assertFails('both a file and a directory')
+
+    def test_rejects_names_differing_only_by_case(self):
+        self.install_zip(zip_bytes({'manifest.json': '{"domain": "a"}', 'a.py': '1', 'A.py': '2'}))
+        self.assertFails('conflicting paths')
+
+    def test_rejects_duplicate_zip_entries(self):
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            data = zip_bytes([('manifest.json', '{"domain": "a"}'), ('a.py', '1'), ('a.py', '2')])
+        self.install_zip(data)
+        self.assertFails('more than once')
+
+    def test_reports_write_failures_as_errors(self):
+        self.install_zip(zip_bytes({'manifest.json': '{"domain": "a"}', 'x' * 300: ''}))
+        self.assertFails('cannot write custom_components/a')
 
 
 if __name__ == '__main__':

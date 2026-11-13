@@ -89,7 +89,10 @@ def unzip(data):
                 continue
             if (entry.external_attr >> 16) & 0o170000 not in (0, 0o100000):
                 raise Error(f'{entry.filename} is not a regular file')
-            files[safe(entry.filename)] = archive.read(entry)
+            name = safe(entry.filename)
+            if name in files:
+                raise Error(f'download contains {name!r} more than once')
+            files[name] = archive.read(entry)
     return files
 
 
