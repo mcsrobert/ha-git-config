@@ -39,12 +39,14 @@ class BuildTest(unittest.TestCase):
         return sorted(path.relative_to(self.output).as_posix() for path in self.output.rglob('*') if path.is_file())
 
     def test_copies_configuration_and_creates_every_mount_point(self):
+        self.write('includes/scripts.yaml', '{}\n')
         self.write('packages/a.yaml', 'a:\n')
         self.write('packages/old.yaml.disable', 'b:\n')
         self.write('automations.yaml', '[]\n')
         self.build()
-        self.assertEqual(self.files(), ['configuration.yaml', 'packages/a.yaml', 'packages/old.yaml.disable'])
-        for name in ('packages', 'blueprints', 'pyscript', 'custom_components', 'www/community'):
+        self.assertEqual(self.files(), ['configuration.yaml', 'includes/scripts.yaml', 'packages/a.yaml',
+                                        'packages/old.yaml.disable'])
+        for name in ('includes', 'packages', 'blueprints', 'pyscript', 'custom_components', 'www/community'):
             self.assertTrue((self.output / name).is_dir(), name)
 
     def test_installs_integrations_and_cards(self):

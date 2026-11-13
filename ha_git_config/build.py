@@ -10,7 +10,7 @@ from . import sources
 from .errors import Error
 from .github import unzip
 
-CONFIG_DIRS = ('packages', 'blueprints', 'pyscript')
+CONFIG_DIRS = ('includes', 'packages', 'blueprints', 'pyscript')
 DOMAIN = re.compile(r'[a-z0-9_]+')
 
 

@@ -15,15 +15,17 @@ entity registry, stays on the persistent volume and remains editable.
 
 ```text
 configuration.yaml
-packages/      automations, scripts, helpers, customize: anything else
+includes/      files configuration.yaml includes, such as automations.yaml
+packages/
 blueprints/
 pyscript/
 hacs.yaml      custom integrations and dashboard cards
 ```
 
-Only these paths reach Home Assistant. Put everything that `configuration.yaml`
-used to `!include` into [packages](https://www.home-assistant.io/docs/configuration/packages/),
-so adding a file never needs a change to the mounts.
+Only these paths reach Home Assistant. Each is mounted on its own, so files that
+`configuration.yaml` includes live in `includes/` rather than next to it, for
+example `automation: !include includes/automations.yaml`. Adding a file to a
+directory never needs a change to the mounts.
 
 ### hacs.yaml
 
@@ -78,7 +80,7 @@ concurrency:
 
 jobs:
   config:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 20
     permissions:
       contents: read
@@ -129,6 +131,7 @@ containers:
   - name: home-assistant
     volumeMounts:
       - { name: config-git, mountPath: /config/configuration.yaml, subPath: configuration.yaml }
+      - { name: config-git, mountPath: /config/includes, subPath: includes }
       - { name: config-git, mountPath: /config/packages, subPath: packages }
       - { name: config-git, mountPath: /config/blueprints, subPath: blueprints }
       - { name: config-git, mountPath: /config/pyscript, subPath: pyscript }
