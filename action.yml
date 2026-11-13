@@ -1,4 +1,4 @@
-name: Home Assistant Git config
+name: Home Assistant OCI config
 description: Check a Home Assistant configuration repository and publish it as an OCI image to mount read-only.
 inputs:
   home-assistant-version:
@@ -73,7 +73,7 @@ runs:
         GITHUB_TOKEN: ${{ inputs.token }}
         IMAGE: ${{ inputs.image }}
       run: |
-        PYTHONPATH="${GITHUB_ACTION_PATH}" python -m ha_git_config build "${CONFIG_PATH}" "${RUNNER_TEMP}/ha-git-config"
+        PYTHONPATH="${GITHUB_ACTION_PATH}" python -m ha_oci_config build "${CONFIG_PATH}" "${RUNNER_TEMP}/ha-oci-config"
         echo "dockerfile=${GITHUB_ACTION_PATH}/Dockerfile" >> "${GITHUB_OUTPUT}"
         image=${IMAGE:-ghcr.io/${GITHUB_REPOSITORY,,}}
         echo "image=${image}" >> "${GITHUB_OUTPUT}"
@@ -81,7 +81,7 @@ runs:
 
     - name: Check configuration
       shell: bash
-      run: PYTHONPATH="${GITHUB_ACTION_PATH}" python -m ha_git_config check "${RUNNER_TEMP}/ha-git-config"
+      run: PYTHONPATH="${GITHUB_ACTION_PATH}" python -m ha_oci_config check "${RUNNER_TEMP}/ha-oci-config"
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
@@ -100,7 +100,7 @@ runs:
       env:
         SOURCE_DATE_EPOCH: '0'
       with:
-        context: ${{ runner.temp }}/ha-git-config
+        context: ${{ runner.temp }}/ha-oci-config
         file: ${{ steps.prepare.outputs.dockerfile }}
         platforms: linux/amd64,linux/arm64
         provenance: false

@@ -1,4 +1,4 @@
-# ha-git-config
+# ha-oci-config
 
 Deliver a Home Assistant configuration from Git, one way. A GitHub Action checks
 a configuration repository and publishes it, together with its custom
@@ -105,7 +105,7 @@ jobs:
       packages: write
     steps:
       - name: Check and publish the configuration
-        uses: mcsrobert/ha-git-config@<commit> # v0.1.0
+        uses: mcsrobert/ha-oci-config@<commit> # v0.1.0
         with:
           # renovate: datasource=pypi depName=homeassistant
           home-assistant-version: 2026.10.4
@@ -131,7 +131,7 @@ annotated versions such as `home-assistant-version`:
 
 ```json5
 {
-  extends: ['config:recommended', 'helpers:pinGitHubActionDigests', 'github>mcsrobert/ha-git-config'],
+  extends: ['config:recommended', 'helpers:pinGitHubActionDigests', 'github>mcsrobert/ha-oci-config'],
 }
 ```
 

@@ -16,7 +16,7 @@ import zipfile
 from . import __version__
 from .errors import Error
 
-USER_AGENT = f'ha-git-config/{__version__}'
+USER_AGENT = f'ha-oci-config/{__version__}'
 
 
 class GitHub:
